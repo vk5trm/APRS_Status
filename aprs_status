@@ -1,0 +1,60 @@
+#!/bin/bash
+#-----------------------------------------------------------------------
+#              D O   N O T   E D I T   T H I S   F I L E 
+# U N L E S S   Y O U   R E A L L Y   K N O W   W H A T   Y O U   A R E
+#    D O I N G .   I F   Y O U   B R E A K   I T   Y O U ' R E   O N
+#                         Y O U R   O W N ! ! !
+#-----------------------------------------------------------------------
+# APRS Object Report Format
+#
+# CHARS   DESCRIPTION
+# -----   --------------------------------------------------------------
+#     1 - The APRS Data Type Identifier; ";" = Object Report
+#  2-10 - Object Name; 9 characters, space padded on the right
+#    11 - * = Live Object; _ = Killed Object
+# 12-18 - Timestamp: DDHHMMz - DD=DOM; HH=Hours; MM=Minutes; z=Zulu
+# 19-26 - Latitude: DDMM.MMH - DD=Degrees (00-90); MM=Minutes (00-59);
+#                              .MM=Fractional Minutes (00-99);
+#                              H=Hemisphere (N or S)
+#    27 - Symbol Table ID (Alternate Symbol Table Overlay char)
+# 28-36 - Longitude: DDDMM.MMH - DDD=Degrees (000-179);
+#                                MM=Minutes (00-59);
+#                                .MM=Fractional Minutes (00-99);
+#                                H=Hemisphere (E or W)
+#    37 - Symbol Code
+# 38-45 - Power Height Gain 
+# 46-80 - Comments: 
+#-----------------------------------------------------------------------
+#
+#
+# Read in the node specific settings.
+. /usr/local/etc/aprs_status.conf
+#
+# Figure out which nc to use
+#
+if [ -f /usr/bin/nc ] ; then
+   NC=/usr/bin/nc
+else
+   NC=/bin/nc
+fi
+#
+# Make the APRS Object Timestamp
+#
+TIMESTAMP=`date -u +%d%H%M`z		# Format = DDHHMMz
+#
+# Assemble the APRS OBJECT
+#
+OBJECT=";${OBJECT_NAME}*${TIMESTAMP}${LAT}/${LONG}r${COMMENT}"
+#
+# Assemble the BTEXT line
+#
+BTEXT="$APRS_CALL>APRS,TCPIP*,:${OBJECT}"
+#
+# Assemble the APRS-IS Login string
+#
+LOGIN="User $APRS_CALL pass $APRS_PASS"
+#
+# Send the Beacon to the APRS-IS network
+#
+echo -e "${LOGIN}\n${BTEXT}" | $NC -w 10 rotate.aprs2.net 14580 # &>/dev/null
+# 
